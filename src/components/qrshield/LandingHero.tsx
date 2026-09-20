@@ -11,28 +11,12 @@ import {
   Lock,
   MousePointerClick,
   QrCode,
-  ScanLine,
   ShieldCheck,
-  Sparkles,
   UserX,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SECURITY_RULE_COUNT } from "@/lib/security/rules";
+import { LiveCheckpoint } from "./LiveCheckpoint";
 import { useQRShield } from "@/lib/store";
-
-/** Deterministic pseudo-random QR pattern (no hydration mismatch). */
-const QR_CELLS = (() => {
-  const cells: boolean[] = [];
-  let x = 42;
-  for (let i = 0; i < 36; i++) {
-    x = (x * 1103515245 + 12345) % 2147483648;
-    cells.push(x % 100 < 52);
-  }
-  // Guarantee finder-pattern corners are dark
-  [0, 1, 5, 6, 7, 11, 30, 31, 35, 24, 25, 29].forEach((i) => (cells[i] = true));
-  [2, 3, 4, 12, 13, 14, 20, 26, 27, 28, 32, 33, 34].forEach((i) => (cells[i] = false));
-  return cells;
-})();
 
 export function LandingHero() {
   const go = useQRShield((s) => s.go);
@@ -103,7 +87,7 @@ export function LandingHero() {
             </ul>
           </div>
 
-          {/* Hero visual: decode → analyze → verdict pipeline */}
+          {/* Hero visual: looping live checkpoint demo */}
           <motion.div
             initial={reduce ? false : { opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -111,94 +95,7 @@ export function LandingHero() {
             className="mx-auto w-full max-w-sm"
             aria-hidden="true"
           >
-            <div className="rounded-3xl border border-border/70 bg-card/70 p-5 shadow-2xl shadow-primary/5 backdrop-blur">
-              <div className="flex items-center justify-between">
-                <div className="flex gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-red-500/60" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-amber-500/60" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/60" />
-                </div>
-                <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                  live checkpoint
-                </span>
-              </div>
-
-              {/* Step 1 — QR */}
-              <div className="mt-4 rounded-2xl border border-border/50 bg-background/60 p-4">
-                <div className="flex items-center gap-4">
-                  <div className="relative grid h-24 w-24 shrink-0 grid-cols-6 grid-rows-6 gap-0.5 overflow-hidden rounded-lg border border-border/50 bg-background p-1.5">
-                    {QR_CELLS.map((on, i) => (
-                      <span key={i} className={`rounded-[2px] ${on ? "bg-foreground/90" : ""}`} />
-                    ))}
-                    {!reduce && (
-                      <motion.span
-                        className="absolute inset-x-0 h-1.5 bg-gradient-to-r from-transparent via-primary/90 to-transparent"
-                        animate={{ top: ["4%", "88%", "4%"] }}
-                        transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
-                      />
-                    )}
-                  </div>
-                  <div>
-                    <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
-                      <ScanLine className="h-3.5 w-3.5" />
-                      QR detected
-                    </p>
-                    <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                      Decoded locally.
-                      <br />
-                      Destination extracted — not opened.
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-3 break-all rounded-lg border border-border/40 bg-background px-3 py-2 font-mono text-[11px] text-muted-foreground">
-                  http://paypa1-secure-login<span className="text-foreground">.xyz</span>/verify
-                </div>
-              </div>
-
-              <div className="flex justify-center py-1.5">
-                <ArrowRight className="h-4 w-4 rotate-90 text-muted-foreground/60" />
-              </div>
-
-              {/* Step 2 — analysis */}
-              <div className="rounded-2xl border border-border/50 bg-background/60 p-4">
-                <p className="flex items-center gap-2 font-mono text-[11px] text-muted-foreground">
-                  <Sparkles className="h-3.5 w-3.5 animate-pulse text-primary" />
-                  Analyzing {SECURITY_RULE_COUNT} signals…
-                </p>
-                <div className="mt-3 space-y-2">
-                  {[
-                    ["Brand impersonation", "bg-red-400/70"],
-                    ["Suspicious TLD", "bg-amber-400/70"],
-                    ["No HTTPS", "bg-amber-400/70"],
-                    ["Credential intent", "bg-red-400/70"],
-                  ].map(([label, dot], i) => (
-                    <motion.p
-                      key={label}
-                      className="flex items-center gap-2 text-[11px] text-foreground/90"
-                      initial={reduce ? false : { opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 + i * 0.35 }}
-                    >
-                      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
-                      {label}
-                    </motion.p>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex justify-center py-1.5">
-                <ArrowRight className="h-4 w-4 rotate-90 text-muted-foreground/60" />
-              </div>
-
-              {/* Step 3 — verdict */}
-              <div className="rounded-2xl border border-red-500/40 bg-red-500/[0.08] p-4 text-center">
-                <p className="text-xs font-bold uppercase tracking-widest text-red-400">
-                  🚨 High risk
-                </p>
-                <p className="mt-1 font-mono text-3xl font-bold text-red-400">87/100</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">Do not open this link</p>
-              </div>
-            </div>
+            <LiveCheckpoint />
           </motion.div>
         </div>
       </section>

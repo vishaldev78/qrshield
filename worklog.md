@@ -66,3 +66,21 @@ Work Log:
 Stage Summary:
 - Result page now reads like a security console while staying explainable
 - Project is VS Code + Vercel ready: npm install && npm run dev works, npm run build is Vercel-native
+
+---
+Task ID: 5
+Agent: Z.ai Code (main orchestrator)
+Task: Landing hero LIVE CHECKPOINT — looping QR scan + animated cycling signals (user request with reference screenshot)
+
+Work Log:
+- Created src/components/qrshield/LiveCheckpoint.tsx replacing the static one-shot hero mock
+- Looping state machine: 4 scripted scenarios (paypa1-secure-login.xyz 80/100 HIGH, bit.ly 30/100 SUSPICIOUS, 192.168.18.22 50/100 SUSPICIOUS, example.com 0/100 SAFE) cycling every 7s via setInterval (functional update — lint-safe), scenario key-remount replays animations
+- Per-scenario timeline: "Scanning QR payload…" amber pulse → "QR detected" green spring + decoded-locally lines → URL types out character-by-character with risky substring highlighted (.xyz / bit.ly / IP) → "Analyzing 14 signals…" header → signal list staggers in (red/amber/sky/green dots) → verdict panel pops (score + label, tone-colored: red/amber/green)
+- QR visual: 7×7 deterministic pseudo-QR with 3×3 finder corners, per-cell animate-pulse shimmer, continuous indigo scanline sweep (usko scan karte rahe)
+- Reduced-motion: all delays collapse to 0, interval disabled, full static scenario shown
+- Verdict scores mirror the real engine's output for these exact URLs (honesty preserved)
+- LandingHero: swapped inline mock for <LiveCheckpoint/>, removed now-unused imports (ScanLine, Sparkles, SECURITY_RULE_COUNT, QR_CELLS)
+- Verified in browser: phase screenshots show scanning state, typed URL + 4 signals, 80/100 HIGH RISK verdict, and scenario 2 restart; lint clean, zero console errors
+
+Stage Summary:
+- Hero now demonstrates the full product story on loop: scan → decode → analyze → verdict
