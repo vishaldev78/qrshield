@@ -159,3 +159,17 @@
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background-color: rgba(148, 163, 184, 0.55);
 }
+
+/* Faint CRT scanlines for the analysis execution-trace console */
+.scanlines-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 2px,
+    rgba(148, 163, 184, 0.045) 3px
+  );
+}

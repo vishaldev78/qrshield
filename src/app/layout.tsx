@@ -27,9 +27,7 @@ export const metadata: Metadata = {
     "URL analyzer",
   ],
   authors: [{ name: "QRShield" }],
-  icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
-  },
+  // Favicon is auto-served from src/app/icon.svg + icon.png (+ apple-icon.png).
   openGraph: {
     title: "QRShield — Scan Before You Trust",
     description:

@@ -55,6 +55,12 @@ export function RiskFlag({ finding, index }: { finding: SecurityFinding; index: 
           >
             {style.label}
           </span>
+          <span
+            className="rounded border border-border/60 bg-background/60 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-muted-foreground"
+            title={`Rule id: ${finding.id} — one of the deterministic checks in the QRShield engine`}
+          >
+            {finding.id}
+          </span>
           <span className="ml-auto font-mono text-xs font-medium text-muted-foreground">
             +{finding.score}
           </span>

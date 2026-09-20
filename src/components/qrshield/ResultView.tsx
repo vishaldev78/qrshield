@@ -18,6 +18,7 @@ import { RiskFlag } from "./RiskFlag";
 import { URLDetails } from "./URLDetails";
 import { SafeActionCard } from "./SafeActionCard";
 import { AIExplain } from "./AIExplain";
+import { ScanTrace } from "./ScanTrace";
 import { LEVEL_META } from "@/lib/security/scoring";
 import { SECURITY_RULE_COUNT } from "@/lib/security/rules";
 import type { URLAnalysis } from "@/lib/security/types";
@@ -79,6 +80,10 @@ function URLResult({ analysis }: { analysis: URLAnalysis }) {
   const sorted = [...analysis.findings].sort(
     (a, b) => severityRank(b.severity) - severityRank(a.severity)
   );
+  const reportTime = new Date(analysis.analyzedAt).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 
   return (
     <motion.div
@@ -86,15 +91,40 @@ function URLResult({ analysis }: { analysis: URLAnalysis }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
     >
+      {/* Console-style report header */}
+      <div
+        aria-hidden="true"
+        className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-primary/20 bg-primary/[0.05] px-4 py-2 font-mono text-[10px] font-semibold uppercase tracking-widest text-slate-400 sm:text-[11px]"
+      >
+        <span className="text-primary">▍analysis report</span>
+        <span className="hidden text-slate-600 sm:inline">{"//"}</span>
+        <span>{reportTime}</span>
+        <span className="hidden text-slate-600 sm:inline">{"//"}</span>
+        <span className="hidden sm:inline">engine qs-dre 1.0 · {SECURITY_RULE_COUNT} rules</span>
+        <span className="ml-auto flex items-center gap-1.5 text-emerald-400">
+          <span className="relative flex h-2 w-2" aria-hidden="true">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+          </span>
+          local execution
+        </span>
+      </div>
+
       {/* Desktop: two-column result. Mobile: stacked. */}
       <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
         {/* Left column — verdict + action */}
         <div className="flex flex-col gap-6">
           <section
             aria-label="Security verdict"
-            className="rounded-2xl border p-6 text-center sm:p-8"
+            className="relative overflow-hidden rounded-2xl border p-6 text-center sm:p-8"
             style={{ borderColor: `${meta.color}45`, backgroundColor: meta.softBg }}
           >
+            {/* Corner brackets — console frame */}
+            <span aria-hidden="true" className="pointer-events-none absolute left-2 top-2 h-5 w-5 border-l-2 border-t-2" style={{ borderColor: `${meta.color}80` }} />
+            <span aria-hidden="true" className="pointer-events-none absolute right-2 top-2 h-5 w-5 border-r-2 border-t-2" style={{ borderColor: `${meta.color}80` }} />
+            <span aria-hidden="true" className="pointer-events-none absolute bottom-2 left-2 h-5 w-5 border-b-2 border-l-2" style={{ borderColor: `${meta.color}80` }} />
+            <span aria-hidden="true" className="pointer-events-none absolute bottom-2 right-2 h-5 w-5 border-b-2 border-r-2" style={{ borderColor: `${meta.color}80` }} />
+
             <RiskScore score={analysis.score} level={analysis.level} />
             <p className="mt-5 text-sm font-semibold text-foreground">{meta.headline}</p>
             <p aria-live="polite" className="sr-only">
@@ -105,9 +135,20 @@ function URLResult({ analysis }: { analysis: URLAnalysis }) {
           <SafeActionCard level={analysis.level} url={analysis.url} />
         </div>
 
-        {/* Right column — destination + findings + details */}
+        {/* Right column — destination + trace + findings + details */}
         <div className="flex min-w-0 flex-col gap-6">
           <DestinationCard url={analysis.url} displayDomain={analysis.details.registrableDomain} />
+
+          <ScanTrace
+            key={analysis.analyzedAt}
+            url={analysis.url}
+            details={analysis.details}
+            score={analysis.score}
+            level={analysis.level}
+            triggeredIds={analysis.findings.map((f) => f.id)}
+            ruleCount={SECURITY_RULE_COUNT}
+            analyzedAt={analysis.analyzedAt}
+          />
 
           <section aria-labelledby="findings-heading">
             <h3

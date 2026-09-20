@@ -49,3 +49,20 @@ Work Log:
 Stage Summary:
 - App is now fully self-testing: no external QR generator needed
 - Test panel doubles as a demo oracle — expected badge must match live verdict
+
+---
+Task ID: 4
+Agent: Z.ai Code (main orchestrator)
+Task: Cybersecurity result feel, favicon, privacy overflow fix, VS Code + Vercel readiness
+
+Work Log:
+- Favicon: created src/app/icon.svg (indigo shield + QR modules on dark rounded square), generated icon.png 192px + apple-icon.png 180px via sharp; removed external z-cdn logo URL from layout.tsx metadata (Next auto-serves local icons; verified link tags in DOM)
+- PrivacyView overflow: replaced min-w-max + overflow-x-auto pipeline strip with flex-wrap justify-center layout — horizontal scrollbar gone on desktop & 390px mobile (verified scrollWidth == clientWidth)
+- Result page cybersecurity upgrade: new ScanTrace.tsx terminal console (mono trace lines with dotted leaders, status colors, signal IDs, $ prompt + blinking cursor, CRT scanline overlay via new .scanlines-overlay utility, on-device badge, reduce-motion support, key-remount replay); console-style ANALYSIS REPORT header strip (timestamp, engine qs-dre 1.0, 14 rules, pulsing LOCAL EXECUTION dot); corner-bracket frames on verdict card; RiskFlag now shows deterministic rule-ID chips (e.g. no-https, ip-destination)
+- Vercel/VS Code: package.json renamed to qrshield@1.0.0, build script changed to plain `next build` (cross-platform, Vercel-native), standalone cp chain moved to `build:standalone`, added `typecheck` script; created README.md (setup, scripts, deploy guide, engine explainer, security model) + .env.example + vercel.json
+- Fixed lint issues: JSX "//" comment text nodes (react/jsx-no-comment-textnodes), sync setState-in-effect (react-hooks/set-state-in-effect) via lazy useState + key remount
+- Verified: user's exact test URL http://en.m.wikipedia.org/ → 10/100 with amber NO TLS trace lines + signals: no-https; favicon link tags local; privacy overflow false at 1280px & 390px; lint clean; tsc clean for src/ (pre-existing errors only in untouched examples/ + skills/ folders); zero console errors
+
+Stage Summary:
+- Result page now reads like a security console while staying explainable
+- Project is VS Code + Vercel ready: npm install && npm run dev works, npm run build is Vercel-native

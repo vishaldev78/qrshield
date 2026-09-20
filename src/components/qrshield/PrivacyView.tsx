@@ -55,13 +55,13 @@ export function PrivacyView() {
         <h2 id="local-heading" className="text-lg font-bold text-foreground">
           The default pipeline never touches a server
         </h2>
-        <div className="mt-5 overflow-x-auto rounded-2xl border border-border/60 bg-card/50 p-5">
-          <div className="flex min-w-max items-center gap-2 font-mono text-xs sm:gap-3 sm:text-[13px]">
+        <div className="mt-5 rounded-2xl border border-border/60 bg-card/50 p-5">
+          <div className="flex flex-wrap items-center justify-center gap-2 font-mono text-xs sm:gap-3 sm:text-[13px]">
             {["QR image / camera", "Browser decoder", "URL extraction", "Security engine", "Result"].map(
               (step, i, arr) => (
                 <div key={step} className="flex items-center gap-2 sm:gap-3">
                   <span
-                    className={`rounded-lg border px-3 py-2 ${
+                    className={`rounded-lg border px-3 py-2 text-center ${
                       i === arr.length - 1
                         ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
                         : "border-border/50 bg-background/60 text-foreground"
@@ -69,7 +69,11 @@ export function PrivacyView() {
                   >
                     {step}
                   </span>
-                  {i < arr.length - 1 && <span className="text-muted-foreground">→</span>}
+                  {i < arr.length - 1 && (
+                    <span className="text-muted-foreground" aria-hidden="true">
+                      →
+                    </span>
+                  )}
                 </div>
               )
             )}
