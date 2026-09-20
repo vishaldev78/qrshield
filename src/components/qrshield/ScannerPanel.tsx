@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Camera, ImageUp, Link2, Lock } from "lucide-react";
+import { Camera, ImageUp, Link2, Lock, QrCode } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CameraScanner } from "./CameraScanner";
 import { ImageUploader } from "./ImageUploader";
 import { URLInput } from "./URLInput";
+import { TestQRPanel } from "./TestQRPanel";
 import { ScanHistory } from "./ScanHistory";
 import { useQRShield } from "@/lib/store";
 
@@ -30,18 +31,22 @@ export function ScannerPanel() {
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3" aria-label="Scanning methods">
-          <TabsTrigger value="camera" className="gap-1.5 text-[13px] sm:text-sm">
+        <TabsList className="grid w-full grid-cols-4" aria-label="Scanning methods">
+          <TabsTrigger value="camera" className="gap-1.5 px-1 text-xs sm:text-sm">
             <Camera className="h-4 w-4" aria-hidden="true" />
             Camera
           </TabsTrigger>
-          <TabsTrigger value="upload" className="gap-1.5 text-[13px] sm:text-sm">
+          <TabsTrigger value="upload" className="gap-1.5 px-1 text-xs sm:text-sm">
             <ImageUp className="h-4 w-4" aria-hidden="true" />
-            Upload image
+            Upload
           </TabsTrigger>
-          <TabsTrigger value="url" className="gap-1.5 text-[13px] sm:text-sm">
+          <TabsTrigger value="url" className="gap-1.5 px-1 text-xs sm:text-sm">
             <Link2 className="h-4 w-4" aria-hidden="true" />
             Paste URL
+          </TabsTrigger>
+          <TabsTrigger value="test" className="gap-1.5 px-1 text-xs sm:text-sm">
+            <QrCode className="h-4 w-4" aria-hidden="true" />
+            Test QR
           </TabsTrigger>
         </TabsList>
 
@@ -55,6 +60,9 @@ export function ScannerPanel() {
         </TabsContent>
         <TabsContent value="url" className="mt-6 focus-visible:outline-none">
           <URLInput />
+        </TabsContent>
+        <TabsContent value="test" className="mt-6 focus-visible:outline-none">
+          <TestQRPanel />
         </TabsContent>
       </Tabs>
 

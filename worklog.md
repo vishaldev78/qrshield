@@ -33,3 +33,19 @@ Stage Summary:
 - App complete and browser-verified at http://localhost:3000 (single route, PRD-compliant)
 - Key decisions: dark-only theme (PRD palette), hash routing instead of extra routes (sandbox constraint), client-side deterministic engine + opt-in AI translator, shortener/IP level-floors reconciling PRD's +15/+25 scores with Suspicious verdict examples
 - Artifacts: 26 new files (5 lib/security, 2 lib/qr, 1 lib/storage, 1 store, 16 components, 1 API route) + page.tsx/layout.tsx/globals.css rewrites
+
+---
+Task ID: 3
+Agent: Z.ai Code (main orchestrator)
+Task: Add built-in Test QR generator panel + ground-truth aligned expected verdicts (user asked "how to test QR codes")
+
+Work Log:
+- Installed qrcode@1.5.4 + @types/qrcode for on-device QR generation
+- Created src/components/qrshield/TestQRPanel.tsx: 6 synthetic test cases (brand-impersonation 80/high, raw-ip 50/suspicious, punycode 55/suspicious, subdomain-brand 60/high, shortener 30/suspicious, legit 0/low), dynamic qrcode import, white QR plate for scan contrast, Download PNG + Copy URL + Analyze-directly actions, 3-step how-to-test guide (two-device camera loop / single-device download+upload loop)
+- Ran all 6 URLs through the deterministic engine via bun to extract ground-truth scores; aligned every "expected" badge with real engine output (raw-ip & punycode corrected from high→suspicious)
+- ScannerPanel: added 4th "Test QR" tab (grid-cols-4, mobile-safe labels)
+- Browser E2E: QR generation ✓, upload-decode-analyze loop (raw-ip PNG → 50/100 suspicious, 3 indicators) ✓, brand case → 80/100 HIGH RISK + PayPal impersonation ✓, control → 0/100 low ✓, mobile 390px ✓, zero console errors, lint clean
+
+Stage Summary:
+- App is now fully self-testing: no external QR generator needed
+- Test panel doubles as a demo oracle — expected badge must match live verdict
