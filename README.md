@@ -1,294 +1,312 @@
-# QRShield
+# QRShield — Scan Before You Trust
 
 **Privacy-first quishing defense platform. Decode first. Analyze second. Visit last.**
 
-QRShield is a client-side QR code security scanner that analyzes QR codes for phishing (quishing) threats before you visit the destination. All processing happens in your browser — no QR images or URLs leave your device.
+QR codes are everywhere — payments, menus, posters, events, authentication, and advertisements. But scanning a QR code can hide an important security question:
 
-## Features
+**Where will this QR code actually take me?**
 
-### Core Security Engine
-- **Client-side analysis** — Zero server-side processing of QR content
-- **Deterministic risk scoring** — 0-100 score based on 15+ heuristic checks
-- **Real-time explanations** — Plain-language risk summaries (local template-based, no external AI)
-- **Privacy by design** — No tracking, no analytics, no account required
+QRShield is a privacy-first QR security scanner designed to analyze QR destinations **before users visit them**.
 
-### Detection Capabilities
-- Brand impersonation & typosquatting detection
-- URL shortener expansion & analysis
-- Suspicious TLD & newly registered domain flags
-- IP address vs. domain validation
-- Homograph/Unicode attack detection
-- Credential harvesting pattern recognition
-- Redirect chain analysis
-- HTTPS enforcement check
-- High-entropy domain detection
-- Query parameter anomaly detection
+Instead of immediately opening an unknown link, QRShield follows a simple security workflow:
 
-### User Experience
-- Camera & file-based QR scanning
-- Scan history (localStorage, encrypted)
-- Dark/light theme support
-- Internationalization (i18n) ready
-- Responsive design for mobile & desktop
-- Accessible (WCAG 2.1 AA)
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| Framework | Next.js 16 (App Router, Turbopack) |
-| Language | TypeScript (strict mode) |
-| Styling | Tailwind CSS v4 + shadcn/ui |
-| QR Decoding | jsqr (WebAssembly) |
-| State | Zustand + TanStack Query |
-| Forms | React Hook Form + Zod |
-| Database | Prisma + SQLite (local) |
-| Auth | NextAuth.js (optional) |
-
-## Quick Start
-
-### Prerequisites
-- Node.js 20+ or Bun 1.1+
-- Git
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/vishaldev78/qrshield.git
-cd qrshield
-
-# Install dependencies
-npm install
-# or: bun install
-
-# Initialize database
-npm run db:push
-
-# Start development server
-npm run dev
-```
-
-Open http://localhost:3000
-
-### Production Build
-
-```bash
-# Build standalone server
-npm run build:standalone
-
-# Start production server
-npm run start
-```
-
-## Project Structure
-
-```
-qrshield/
-├── src/
-│   ├── app/                    # Next.js App Router pages
-│   │   ├── api/
-│   │   │   └── explain/        # Local explanation API (no external AI)
-│   │   ├── scanner/            # QR scanner page
-│   │   ├── history/            # Scan history page
-│   │   ├── settings/           # User preferences
-│   │   ├── layout.tsx          # Root layout
-│   │   └── page.tsx            # Landing page
-│   ├── components/
-│   │   ├── scanner/            # Camera & file upload components
-│   │   ├── results/            # Risk score & findings display
-│   │   ├── ui/                 # shadcn/ui base components
-│   │   └── layout/             # Header, footer, navigation
-│   ├── lib/
-│   │   ├── analyzer/           # Core security analysis engine
-│   │   │   ├── heuristics.ts   # 15+ detection rules
-│   │   │   ├── scorer.ts       # Risk scoring algorithm
-│   │   │   └── templates.ts    # Explanation templates
-│   │   ├── db/                 # Prisma client & helpers
-│   │   ├── utils/              # Shared utilities
-│   │   └── validations/        # Zod schemas
-│   ├── hooks/                  # Custom React hooks
-│   ├── store/                  # Zustand stores
-│   └── styles/                 # Global styles & Tailwind config
-├── prisma/
-│   └── schema.prisma           # Database schema
-├── public/                     # Static assets
-├── .env.example                # Environment template
-├── next.config.ts              # Next.js configuration
-├── tailwind.config.ts          # Tailwind configuration
-├── tsconfig.json               # TypeScript configuration
-└── package.json
-```
-
-## Security Architecture
-
-### Threat Model
-QRShield assumes:
-- Attacker controls QR code content
-- User scans QR code with camera or uploads image
-- User may visit the decoded URL
-- Goal: Prevent credential theft, malware delivery, fraud
-
-### Analysis Pipeline
-
-```
-QR Image → jsqr Decoder → URL Normalization → Heuristic Engine → Risk Score (0-100) → Level (Low/Suspicious/High) → Local Explanation Generator → UI
-```
-
-### Heuristic Categories
-
-| Category | Weight | Description |
-|----------|--------|-------------|
-| Brand Impersonation | 25 | Known brand keywords in suspicious contexts |
-| Typosquatting | 20 | Levenshtein distance to popular domains |
-| URL Shortener | 15 | Known shortening services |
-| Suspicious TLD | 10 | High-risk TLDs (.tk, .ml, .ga, etc.) |
-| New Domain | 15 | Registered < 30 days (via RDAP) |
-| IP Address | 20 | Bare IP in URL |
-| Homograph Attack | 20 | Mixed-script Unicode domains |
-| Credential Harvesting | 25 | Login form patterns |
-| Redirect Chain | 15 | > 2 redirects |
-| HTTPS Missing | 10 | HTTP instead of HTTPS |
-| High Entropy | 10 | Algorithmic domain names |
-| Suspicious Path | 10 | Login-like paths on unknown domains |
-| Query Anomalies | 5 | Encoded/obfuscated parameters |
-| Subdomain Abuse | 10 | Excessive subdomain depth |
-| Known Patterns | 20 | Regex matches to phishing kits |
-
-### Risk Levels
-
-| Score | Level | Action |
-|-------|-------|--------|
-| 0-29 | Low | Proceed with normal caution |
-| 30-69 | Suspicious | Verify independently before visiting |
-| 70-100 | High | Do not visit; report if from trusted source |
-
-## API Reference
-
-### POST /api/explain
-
-Generate plain-language explanation for scan results.
-
-**Request:**
-```json
-{
-  "url": "https://example.com",
-  "score": 65,
-  "level": "suspicious",
-  "findings": [
-    { "title": "Brand impersonation", "severity": "high", "description": "..." },
-    { "title": "URL shortener", "severity": "medium", "description": "..." }
-  ]
-}
-```
-
-**Response:**
-```json
-{
-  "explanation": "This QR code leads to a suspicious destination. This link appears to mimic a well-known brand's login page. Attackers often copy legitimate sites to steal credentials. This link uses a URL shortening service which hides the true destination. Shortened links are commonly used to disguise malicious sites. Type the official address yourself instead of using this link."
-}
-```
-
-## Configuration
-
-### Environment Variables
-
-```env
-# .env
-DATABASE_URL="file:./dev.db"
-NEXTAUTH_SECRET="your-secret-here"
-NEXTAUTH_URL="http://localhost:3000"
-```
-
-### Customization
-
-**Add custom heuristics** in `src/lib/analyzer/heuristics.ts`:
-```typescript
-export const customHeuristics: Heuristic[] = [
-  {
-    id: "my-check",
-    name: "Custom Check",
-    weight: 15,
-    check: (url: URL, hostname: string) => {
-      // return { detected: boolean, description: string } | null
-    }
-  }
-];
-```
-
-**Modify explanation templates** in `src/lib/analyzer/templates.ts`.
-
-## Privacy
-
-- **No external requests** for analysis or explanations
-- **No telemetry** or analytics
-- **Local storage only** for scan history (AES-GCM encrypted)
-- **No accounts** required
-- **Open source** — audit the code yourself
-
-## Browser Support
-
-| Browser | Version |
-|---------|---------|
-| Chrome | 90+ |
-| Firefox | 88+ |
-| Safari | 14+ |
-| Edge | 90+ |
-| Mobile Safari | 14+ |
-| Chrome Android | 90+ |
-
-Requires: Camera API, FileReader, WebAssembly, localStorage, IndexedDB
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
-
-### Development Commands
-
-```bash
-# Type checking
-npm run typecheck
-
-# Linting
-npm run lint
-
-# Database operations
-npm run db:push      # Push schema changes
-npm run db:generate  # Generate Prisma client
-npm run db:migrate   # Run migrations
-npm run db:reset     # Reset database
-```
-
-## Roadmap
-
-- [ ] Offline PWA support
-- [ ] Batch QR scanning
-- [ ] Browser extension
-- [ ] Enterprise dashboard
-- [ ] API for integrations
-- [ ] ML-based detection (on-device)
-- [ ] Community threat intelligence feed
-
-## Security
-
-Found a vulnerability? Email security@qrshield.dev or open a [GitHub Security Advisory](https://github.com/vishaldev78/qrshield/security/advisories/new).
-
-## License
-
-MIT License — see [LICENSE](LICENSE) for details.
-
-## Acknowledgments
-
-- [jsqr](https://github.com/cozmo/jsqr) — QR decoding
-- [shadcn/ui](https://ui.shadcn.com/) — Component library
-- [Tailwind CSS](https://tailwindcss.com/) — Styling
-- [Next.js](https://nextjs.org/) — Framework
-- Security research from [PhishTank](https://phishtank.org/), [OpenPhish](https://openphish.com/), [APWG](https://apwg.org/)
+> **Decode → Analyze → Explain → Decide**
 
 ---
 
-**QRShield** — Built for privacy. Designed for safety. Open for everyone.
+## The Problem
+
+Traditional QR scanners are optimized for convenience. Scan a code and open the destination.
+
+That creates an opportunity for **quishing — QR-based phishing attacks**.
+
+A malicious QR code can redirect users to:
+
+* Fake login pages
+* Brand impersonation websites
+* Credential-harvesting pages
+* Suspicious shortened URLs
+* Look-alike or typosquatted domains
+* Unusual IP-based destinations
+* Other suspicious web destinations
+
+The user often has no opportunity to understand the destination before opening it.
+
+QRShield adds a security checkpoint between **scanning** and **visiting**.
+
+---
+
+## Our Solution
+
+QRShield extracts the destination from a QR code and analyzes it using a deterministic security engine.
+
+Users can:
+
+### 📷 Scan with Camera
+
+Scan a QR code directly using the device camera.
+
+### 🖼️ Upload a QR Image
+
+Upload a QR code image and extract its destination without manually opening it.
+
+### 🔗 Analyze a URL
+
+Paste a URL directly when a QR code is not available.
+
+### 🛡️ Get a Risk Assessment
+
+QRShield evaluates multiple security signals and produces a **0–100 risk score** with a clear risk level.
+
+### 🔎 Understand Why
+
+Instead of only displaying a score, QRShield shows the individual security findings that contributed to the assessment.
+
+### 🚦 Decide Before Visiting
+
+The user remains in control of whether to proceed.
+
+---
+
+## Security Analysis
+
+QRShield uses multiple heuristic signals rather than relying on a single indicator.
+
+Depending on the available destination data, the engine can evaluate signals such as:
+
+| Detection                    | Purpose                                         |
+| ---------------------------- | ----------------------------------------------- |
+| Brand impersonation          | Detect suspicious use of known brand names      |
+| Typosquatting                | Identify domains resembling legitimate websites |
+| URL shorteners               | Highlight destinations hiding the final URL     |
+| Suspicious TLDs              | Flag potentially higher-risk domain extensions  |
+| IP destinations              | Identify URLs using raw IP addresses            |
+| Unicode / homograph patterns | Detect look-alike domain techniques             |
+| Credential patterns          | Identify login or credential-related paths      |
+| HTTPS                        | Highlight unencrypted HTTP destinations         |
+| Suspicious paths             | Detect unusual authentication/payment patterns  |
+| Subdomain abuse              | Identify unusually deep domain structures       |
+| Query anomalies              | Flag suspicious or obfuscated parameters        |
+| URL structure                | Detect unusually complex destinations           |
+
+These signals are treated as **indicators of risk, not proof of maliciousness**.
+
+---
+
+## Risk Model
+
+QRShield converts detected indicators into a normalized risk score.
+
+|      Score | Assessment | Recommended Action                                   |
+| ---------: | ---------- | ---------------------------------------------------- |
+|   **0–29** | Low        | Proceed with normal caution                          |
+|  **30–69** | Suspicious | Verify the destination independently                 |
+| **70–100** | High       | Avoid visiting and verify through an official source |
+
+The purpose of the score is not to claim absolute safety.
+
+It is to give users **useful security context before they make a decision**.
+
+---
+
+## Privacy by Design
+
+Privacy is a core part of QRShield rather than an additional feature.
+
+The intended architecture keeps QR analysis on the client whenever possible:
+
+**QR Image → Decoder → URL Normalization → Security Engine → Risk Score → Findings → Explanation**
+
+No account is required for the core scanning experience.
+
+QRShield is designed to avoid unnecessary collection of QR content and destination data.
+
+---
+
+## AI-Assisted, Not AI-Dependent
+
+QRShield separates its core security analysis from its explanation layer.
+
+The **deterministic security engine** generates the underlying findings and risk assessment.
+
+An optional AI layer can make those findings easier to understand in natural language.
+
+This means an AI service failure does not have to stop the core security analysis.
+
+The architecture is intentionally:
+
+**Security Engine → Evidence → Optional AI Explanation**
+
+rather than:
+
+**AI → Security Decision**
+
+This makes the system more predictable and easier to audit.
+
+---
+
+## How QRShield Works
+
+```text
+              QR CODE / URL
+                    │
+                    ▼
+             QR DECODER
+                    │
+                    ▼
+          DESTINATION EXTRACTION
+                    │
+                    ▼
+           URL NORMALIZATION
+                    │
+                    ▼
+        SECURITY ANALYSIS ENGINE
+                    │
+          ┌─────────┴─────────┐
+          ▼                   ▼
+    Security Signals      URL Structure
+          │                   │
+          └─────────┬─────────┘
+                    ▼
+              RISK SCORING
+                    │
+                    ▼
+          SECURITY FINDINGS
+                    │
+                    ▼
+          HUMAN-READABLE RESULT
+                    │
+                    ▼
+             USER DECISION
+```
+
+The key principle is simple:
+
+> **The scanner should not blindly trust what it scans.**
+
+---
+
+## Technology
+
+### Frontend
+
+* Next.js 16
+* React
+* TypeScript
+* Tailwind CSS
+* shadcn/ui
+
+### QR Processing
+
+* jsQR
+* Camera API
+* File-based QR decoding
+
+### Application Architecture
+
+* Next.js App Router
+* Zustand
+* TanStack Query
+* React Hook Form
+* Zod
+* Prisma
+* SQLite
+
+### Security Layer
+
+* Deterministic heuristic engine
+* URL normalization
+* Risk scoring
+* Explainable security findings
+* Local explanation templates
+* Optional AI explanation
+
+---
+
+## Why We Built It
+
+QR codes were created to make digital interactions faster.
+
+That convenience also means users can interact with a destination **without first seeing or understanding it**.
+
+We wanted to build a simple security layer that changes the interaction from:
+
+> **Scan → Open**
+
+to:
+
+> **Scan → Understand → Decide**
+
+QRShield is our exploration of what a safer QR experience could look like.
+
+---
+
+## Challenges
+
+One of our biggest challenges was designing security rules that provide useful signals without treating every unusual URL as malicious.
+
+For example:
+
+* An HTTP website is not automatically malicious.
+* A URL shortener is not automatically malicious.
+* An unfamiliar domain is not automatically malicious.
+* A suspicious-looking TLD alone is not enough to prove an attack.
+
+Therefore, QRShield combines multiple signals and presents them as evidence for the user to evaluate.
+
+Another challenge was **explainability**.
+
+A risk score without context does not help most users. QRShield therefore exposes the findings behind the score instead of hiding the reasoning behind a single number.
+
+We also designed the architecture so that optional AI assistance does not become a dependency for the core security analysis.
+
+---
+
+## What We Learned
+
+Building QRShield taught us that cybersecurity products need more than detection.
+
+They need:
+
+**Detection + Explainability + User Control**
+
+A technically sophisticated security engine is less useful if users cannot understand its output.
+
+We also learned that AI is most useful when it complements deterministic security logic rather than replacing it.
+
+---
+
+## Future Roadmap
+
+QRShield can be extended with additional security intelligence, including:
+
+* Domain reputation services
+* Threat-intelligence feeds
+* Domain registration intelligence
+* Advanced homograph detection
+* Controlled redirect-chain analysis
+* Browser isolation for suspicious destinations
+* On-device ML classification
+* Offline PWA support
+* Batch QR scanning
+* Browser extension
+* Enterprise security policies
+* Community threat intelligence
+
+---
+
+## The Core Idea
+
+QRShield does not promise that a URL is **100% safe**.
+
+Instead, it gives users something they usually don't have when scanning a QR code:
+
+**context before they click.**
+
+### Decode first.
+
+### Analyze second.
+
+### Visit last.
+
+**QRShield — Scan Before You Trust.**
