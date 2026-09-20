@@ -4,7 +4,7 @@
   "private": true,
   "description": "QRShield — privacy-first quishing defense platform. Decode first. Analyze second. Visit last.",
   "scripts": {
-    "dev": "next dev -p 3000 2>&1 | tee dev.log",
+    "dev": "next dev",
     "build": "next build",
     "build:standalone": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",

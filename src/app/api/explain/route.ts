@@ -11,7 +11,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import ZAI from "z-ai-web-dev-sdk";
+import OpenAI from "openai";
+import fs from "fs";
+import path from "path";
 
 const ExplainSchema = z.object({
   url: z.string().min(1).max(2048),
@@ -70,13 +72,22 @@ ${findingsSummary || "- No risk indicators detected"}
 Write the plain-language explanation for the user following the rules.`;
 
   try {
-    const zai = await ZAI.create();
-    const completion = await zai.chat.completions.create({
+    const configPath = path.join(process.cwd(), ".z-ai-config");
+    const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    
+    const client = new OpenAI({
+      apiKey: config.apiKey,
+      baseURL: config.baseUrl,
+    });
+
+    const completion = await client.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
       messages: [
-        { role: "assistant", content: SYSTEM_PROMPT },
+        { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: userPrompt },
       ],
-      thinking: { type: "disabled" },
+      temperature: 0.3,
+      max_tokens: 300,
     });
 
     const explanation = completion.choices[0]?.message?.content?.trim();
