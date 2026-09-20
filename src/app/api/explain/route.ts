@@ -7,13 +7,12 @@
  *
  * Privacy: receives ONLY the URL + findings summary. No QR image, no history,
  * no identity. Findings are trimmed to short summaries before prompting.
+ * 
+ * This implementation uses local template-based generation - no external API calls.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import OpenAI from "openai";
-import fs from "fs";
-import path from "path";
 
 const ExplainSchema = z.object({
   url: z.string().min(1).max(2048),
@@ -30,15 +29,69 @@ const ExplainSchema = z.object({
     .max(14),
 });
 
-const SYSTEM_PROMPT = `You are the plain-language explainer for QRShield, a QR-code (quishing) safety tool.
+// Template-based explanations for each finding type
+const FINDING_TEMPLATES: Record<string, (url: string) => string> = {
+  "Brand impersonation": (url) => `This link appears to mimic a well-known brand's login or service page. Attackers often copy legitimate sites to steal credentials. Type the official address yourself instead of using this link.`,
+  
+  "URL shortener": (url) => `This link uses a URL shortening service which hides the true destination. Shortened links are commonly used to disguise malicious sites. Expand the link first using a preview service before visiting.`,
+  
+  "Suspicious TLD": (url) => `The domain uses a top-level extension often associated with spam or phishing campaigns. While not always malicious, exercise extra caution. Verify the site independently before entering any information.`,
+  
+  "Newly registered domain": (url) => `This domain was registered very recently. New domains are frequently used for phishing campaigns before being blocked. Be especially cautious with links to newly created sites.`,
+  
+  "IP address in URL": (url) => `The link points directly to an IP address rather than a domain name. Legitimate services rarely use bare IP addresses for customer-facing pages. This is a strong indicator of a phishing attempt.`,
+  
+  "Excessive subdomains": (url) => `This URL contains an unusual number of subdomains, a technique used to make the address look familiar while hiding the real destination. Check the actual domain (the last two parts) before trusting the link.`,
+  
+  "Homograph attack": (url) => `The domain uses characters that look like familiar letters but are actually different Unicode characters. This visual deception tricks users into thinking they're on a legitimate site. Type addresses manually.`,
+  
+  "Credential harvesting": (url) => `This page appears designed to collect login credentials or personal information. Legitimate companies don't ask for passwords via QR code links. Never enter credentials on pages reached through QR codes.`,
+  
+  "Suspicious redirect chain": (url) => `This link redirects through multiple intermediate URLs before reaching the final destination. Redirect chains are often used to evade security filters and hide malicious endpoints. Avoid following such links.`,
+  
+  "Known phishing pattern": (url) => `This URL matches patterns commonly used in phishing attacks. The structure resembles known malicious campaigns. Do not enter any personal information on this site.`,
+  
+  "Typosquatting": (url) => `The domain name closely resembles a popular site but with slight variations (extra letters, missing characters, etc.). This is a classic technique to catch users who mistype or glance quickly. Double-check the spelling.`,
+  
+  "Suspicious path": (url) => `The URL path contains unusual patterns like random strings, encoded data, or paths mimicking legitimate login pages. These are often indicators of automated phishing kits. Avoid accessing this link.`,
+  
+  "Missing HTTPS": (url) => `This link uses HTTP instead of HTTPS, meaning the connection is not encrypted. Any data you enter could be intercepted. Never submit sensitive information on unencrypted pages.`,
+  
+  "Generic finding": (url) => `This link shows characteristics that warrant caution. While not definitively malicious, the detected signals suggest it could be used for phishing or fraud. Verify through official channels before proceeding.`,
+  
+  "High entropy domain": (url) => `The domain name appears randomly generated with high character variation, which is typical of algorithmically created phishing domains. Legitimate businesses rarely use such domain patterns.`,
+  
+  "Suspicious query parameters": (url) => `The URL contains unusual query parameters that may be used for tracking, session hijacking, or payload delivery. Be cautious of links with long, encoded, or obfuscated parameters.`,
+  
+  "No risk indicators detected": (url) => `No specific risk indicators were found in this URL. However, always verify the destination independently, especially for links from QR codes. When in doubt, type the address manually.`,
+};
 
-STRICT RULES:
-1. The security engine has ALREADY decided the risk level. Never contradict it, never re-score, never say "this is actually safe" or upgrade the severity.
-2. Explain in 2-4 short sentences why the detected signals matter for an everyday user.
-3. Use calm, non-technical language. No jargon without a quick explanation.
-4. Never tell the user the link is definitely malicious — say "appears", "is consistent with", "is a common pattern in".
-5. End with one concrete, safe next step (e.g. "type the bank's address yourself instead of using this link").
-6. Never include URLs, never ask for information, never output lists or markdown headers — one short paragraph only.`;
+function generateExplanation(url: string, level: string, findings: Array<{ title: string; severity: string; description: string }>): string {
+  if (findings.length === 0) {
+    return FINDING_TEMPLATES["No risk indicators detected"](url);
+  }
+
+  // Sort findings by severity (high first)
+  const sortedFindings = [...findings].sort((a, b) => {
+    const severityOrder = { high: 3, medium: 2, low: 1 };
+    return severityOrder[b.severity] - severityOrder[a.severity];
+  });
+
+  // Take top 3 most severe findings
+  const topFindings = sortedFindings.slice(0, 3);
+
+  // Generate explanations for each finding
+  const explanations = topFindings.map((f) => {
+    const template = FINDING_TEMPLATES[f.title] || FINDING_TEMPLATES["Generic finding"];
+    return template(url);
+  });
+
+  // Combine into a coherent paragraph
+  const levelText = level === "high" ? "high risk" : level === "suspicious" ? "suspicious" : "low risk";
+  const intro = `This QR code leads to a ${levelText} destination. `;
+  
+  return intro + explanations.join(" ") + " When in doubt, visit the official website directly by typing the address.";
+}
 
 export async function POST(req: NextRequest) {
   let body: unknown;
@@ -58,49 +111,12 @@ export async function POST(req: NextRequest) {
 
   const { url, score, level, findings } = parsed.data;
 
-  const findingsSummary = findings
-    .map((f) => `- [${f.severity}] ${f.title}: ${f.description}`)
-    .join("\n");
-
-  const userPrompt = `Security engine result (authoritative):
-- Destination: ${url}
-- Risk score: ${score}/100
-- Level: ${level}
-- Findings:
-${findingsSummary || "- No risk indicators detected"}
-
-Write the plain-language explanation for the user following the rules.`;
-
   try {
-    const configPath = path.join(process.cwd(), ".z-ai-config");
-    const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    const explanation = generateExplanation(url, level, findings);
     
-    const client = new OpenAI({
-      apiKey: config.apiKey,
-      baseURL: config.baseUrl,
-    });
-
-    const completion = await client.chat.completions.create({
-      model: "openai/gpt-oss-20b",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.3,
-      max_tokens: 300,
-    });
-
-    const explanation = completion.choices[0]?.message?.content?.trim();
-    if (!explanation) {
-      return NextResponse.json(
-        { error: "The explanation service returned an empty response." },
-        { status: 502 }
-      );
-    }
-
     return NextResponse.json({ explanation });
   } catch (err) {
-    console.error("[/api/explain] AI request failed:", err);
+    console.error("[/api/explain] Explanation generation failed:", err);
     return NextResponse.json(
       { error: "Explanation service is temporarily unavailable." },
       { status: 502 }
